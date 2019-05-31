@@ -1,0 +1,83 @@
+$theme: #1BBC9B;
+$p100: 4.267rem;
+$p55: 2.3467rem;
+$p47: 2.0054rem;
+$p45: 1.92rem;
+$p40: 1.707rem;
+$p35: 1.494rem;
+$p30: 1.28rem;
+$p25: 1.07rem;
+$p20: 0.854rem;
+$p18: 0.768rem;
+$p16: 0.6826rem;
+$p15: 0.64rem;
+$p14: 0.5973rem;
+$p12: 0.512rem;
+$p10: 0.426rem;
+$p6: 0.256rem;
+$p5: 0.214rem;
+$p4: 0.1707rem;
+$p2: 0.0854rem;
+$p1: 0.0426rem;
+
+//宽高
+@mixin wh($width, $height){
+	width: $width;
+	height: $height;
+}
+
+//定位上下左右居中
+@mixin center {  
+	position: absolute;
+	top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+//定位左右居中
+@mixin cl {  
+	position: absolute;
+	left: 50%;
+    transform: translateX(-50%);
+}
+
+//定位上下居中
+@mixin ct {  
+	position: absolute;
+	top: 50%;
+    transform: translateY(-50%);
+}
+
+//字体大小，颜色
+@mixin sc($size, $color){
+	font-size: $size;
+	color: $color;
+}
+
+//flex 布局和 子元素 对其方式
+@mixin fj($type: space-between){
+	display: flex;
+	justify-content: $type;
+}
+
+@mixin btn($bc: $theme) {
+	@include wh(100%, 1.7rem);
+	@include sc(0.682rem, #fff);
+	line-height: 1.7rem;
+	border-radius: 4px;
+	background: $bc;
+	text-align: center;
+}
+
+@mixin bl15() {
+	position: relative;
+	overflow: hidden;
+	&:after {
+		content: '';
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		width: 100%;
+		border-top: 1px solid #f3f3f3;
+	}
+}
