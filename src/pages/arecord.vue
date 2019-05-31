@@ -1,6 +1,6 @@
 <template>
   <div class="acollent-main">
-    <vheader :goBack="true" title="汇总查询" background="#1BBC9B" color="#fff"></vheader>
+    <vheader :goBack="true" title="补货查询" background="#1BBC9B" color="#fff"></vheader>
     <div class="acollent-content">
       <form @submit.prevent="sublogin" class="acollent-form">
         <div>
@@ -21,13 +21,13 @@
       </form>
       <ul class="acollent-list">
         <li class="acollent-li" v-for="(item, index) in record_list" :key="index">
-          <h3 class="order-title">{{ item.order_title }}</h3>
+          <h3 class="order-title">{{ item.suo_devicename }}</h3>
           <div class="order-time">
             <img src="../assets/images/icon1.png" alt>
-            {{ item.order_time }}
+            {{ item.time }}
           </div>
-          <div class="order-pirce">(门编号：{{ item.order_num }})</div>
-          <h2 class="order-detail">{{ item.order_name }}</h2>
+          <div class="order-pirce">(门编号：{{ item.lock_id }})</div>
+          <h2 class="order-detail">{{ item.suo_devicename }}({{ item.post_title }})</h2>
         </li>
       </ul>
       <van-popup v-model="start_show" position="bottom" :overlay="true">
@@ -49,19 +49,26 @@
         />
       </van-popup>
     </div>
+    <infinite-loading force-use-infinite-wrapper infinite-scroll-disabled="busy" @infinite="infiniteHandler" v-if="isShow && orderInfo">
+    </infinite-loading>
   </div>
 </template>
 
 <script>
 import vheader from "components/header/header";
+// 引入 上拉加载插件 组件
+import InfiniteLoading from "vue-infinite-loading";
+import { getTimeLockLog, getDevicename } from '../service/getData'
 import { formatDate } from "assets/js/common";
 import { DatetimePicker, Popup } from "vant";
+import { Toast } from 'vant'
 import Vue from "vue";
 
 Vue.use(DatetimePicker).use(Popup);
 export default {
   components: {
-    vheader: vheader
+    vheader: vheader,
+    InfiniteLoading
   },
   data() {
     return {
@@ -71,26 +78,11 @@ export default {
       end_time: "", // 结束时间
       start_show: false, // 时间选择器显示隐藏
       end_show: false, // 时间选择器显示隐藏
-      record_list: [
-        {
-          order_title: "D201903211056090387167",
-          order_time: "2019-03-21 10:56:14",
-          order_handle: "开门成功",
-          order_pirce: 0.4,
-          order_num: 2,
-          order_client: "微信",
-          order_name: "20190313000491(饼干牛奶套装（测试用）)"
-        },
-        {
-          order_title: "D201903211056090387167",
-          order_time: "2019-03-21 10:56:14",
-          order_handle: "开门成功",
-          order_pirce: 0.4,
-          order_num: 2,
-          order_client: "微信",
-          order_name: "20190313000491(饼干牛奶套装（测试用）)"
-        }
-      ]
+      current: 1, // 分页，从第几页加载
+      size: 10, // 加载数据的条数
+      isShow: false, // 是否显示正在加载动画
+      orderInfo: [], // 拷贝一份订单信息，用来处理上拉加载更多效果，减少请求
+      record_list: []
     };
   },
   methods: {
@@ -98,15 +90,101 @@ export default {
       this.start_time = formatDate(this.time);
       this.start_show = false;
     },
+
     // 时间选择器确定
     set_end_time() {
       this.end_time = formatDate(this.time);
       this.end_show = false;
     },
-    sublogin() {
-      // 获取起始 时间 然后清空 两个变量的值
-      console.log(this.start_time, this.end_time);
-      this.start_time = this.end_time = "";
+
+    async sublogin() {
+      // Toast.loading({
+      //   message: "加载中...",
+      //   duration: 3000
+      // });
+      const result = await getDevicename();
+      console.log(result)
+      if (result.code == 1) {
+        let data = result.data;
+        for (let i = 0; i < data.length; i++) {
+          console.log(data[i].devicename == this.terminal)
+          if (data[i].devicename == this.terminal) break;
+          if (data[i].devicename != this.terminal) continue;
+          console.log(this.terminal)
+          if (this.terminal != data[i].devicename && this.terminal != "") {
+            this.handleCheck("设备不存在");
+            return;
+          }
+        }
+      }
+      const res = await getTimeLockLog({
+        start_time: this.start_time,
+        end_time: this.end_time,
+        suo_devicename: this.terminal
+      });
+      if (this.start_time !== "" && this.end_time == "") {
+        this.handleCheck("请输入完整时间");
+        return;
+      }
+      if (this.end_time !== "" && this.start_time == "") {
+        this.handleCheck("请输入完整时间");
+        return;
+      }
+      if (res.code == 1) {
+        this.record_list = this.orderInfo = res.data;
+        if (res.data.length == 0) {
+          Toast('暂无对应的数据信息')
+          return;
+        }
+        var page = {
+          current: 0,
+          size: 10
+        };
+        let data = this.record_list;
+        let filterData = page => {
+          let start = page.current * page.size;
+          data = data.slice(start, start + page.size);
+          this.record_list = data;
+          return data;
+        };
+        filterData(page);
+        this.isShow = true;
+      } else {
+        Toast(res.msg);
+      }
+    },
+
+    // 上拉加载更多数据
+    infiniteHandler($state) {
+      setTimeout(() => {
+        var page = {
+          current: this.current++,
+          size: this.size
+        };
+        let data = this.orderInfo;
+        // 获取数据 模拟分页获取数据的效果
+        let filterData = page => {
+          let start = page.current * page.size;
+          data = data.slice(start, start + page.size);
+          // 拼接数据，存放到订单信息中
+          this.record_list = [].concat(this.record_list,data)
+        };
+        filterData(page);
+        // 判断还有没有数据
+        if (this.record_list.length >= this.orderInfo.length) {
+          // 隐藏 正在加载动画
+          this.isShow = false;
+          // 结束了
+          return;
+        }
+        // 再次调用请求的函数
+        $state.loaded();
+      }, 1000);
+    },
+
+    handleCheck(con) {
+      this.record_list = [];
+      Toast(con);
     }
   }
 };

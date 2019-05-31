@@ -137,6 +137,7 @@ export default {
 		input {
 			vertical-align: middle;
 			font-size: 12px;
+      width: 80%;
 		}
 	}
   .submit {

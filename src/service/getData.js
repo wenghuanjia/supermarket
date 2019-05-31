@@ -53,3 +53,9 @@ export const editDevicename = (data) => axios('/user/Operate/editDevicename', da
 
 // 获取订单详情数据
 export const getLogGoods = () => axios('/user/Operate/getLogGoods')
+
+// 获取补货记录
+export const getTimeLockLog = (data) => axios('/user/Operate/getTimeLockLog', data)
+
+// 汇总查询 传递参数 (非必要参数) 起始两个时间点  设备名
+export const getTimeLogGoods = (data) => axios('/user/Operate/getTimeLogGoods', data)

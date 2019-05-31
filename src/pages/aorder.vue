@@ -44,7 +44,7 @@
 
 <script>
 import vheader from "components/header/header";
-import { getLogGoods } from "../service/getData";
+import { getLogGoods, getTimeLogGoods } from "../service/getData";
 // 引入 上拉加载插件 组件
 import InfiniteLoading from "vue-infinite-loading";
 import { Toast } from "vant";
@@ -67,7 +67,7 @@ export default {
     handleOrderInfo() {
       let that = this;
       getLogGoods().then(res => {
-        console.log(res)
+        // console.log(res)
         if (res.code == 1) {
           that.orderInfo = res.data.good_data;
           that.order_item = res.data.good_data;
@@ -87,7 +87,7 @@ export default {
           res.data.good_data.forEach(item => {
             that.rental += parseFloat(item.total);
           });
-          that.rental = that.rental.toFixed(2);
+          that.rental = that.rental.toFixed(1);
           that.profit = that.rental;
         } else {
           Toast(res.msg);
@@ -121,9 +121,22 @@ export default {
         $state.loaded();
       }, 1000);
     },
+    // 计算昨日利益
+    async handleFront() {
+      // 当前时间
+      var nowDate = new Date(new Date().toLocaleDateString())
+      // 获取前一天日期
+      var beforeDate = new Date(nowDate.getTime()-24*60*60*1000).toLocaleDateString()
+      const result = await getTimeLogGoods({start_time: beforeDate, end_time: nowDate, suo_devicename: ''})
+      console.log(result)
+      if (result.code == 1) {
+        this.old_price = result.data.sum_total;
+      }
+    }
   },
   created() {
     this.handleOrderInfo();
+    this.handleFront();
   },
   // 挂载组件
   components: {
